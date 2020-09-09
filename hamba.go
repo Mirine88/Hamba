@@ -2,7 +2,9 @@ package hamba
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Hamba main struct
@@ -13,9 +15,10 @@ type Hamba struct {
 }
 
 var (
-	errIsNotValidType error = errors.New("that's not valid type")
-	errIsNotExistKey  error = errors.New("that's not exist key")
-	errItIsReadonly   error = errors.New("a readonly property of that's list is true")
+	errIsNotValidType       error = errors.New("that's not valid type")
+	errIsNotExistKey        error = errors.New("that's not exist key")
+	errItIsReadonly         error = errors.New("a readonly property of that's list is true")
+	errAreNotHaveSameLength error = errors.New("those are not have the same length")
 )
 
 func find(slice []string, val string) int {
@@ -199,10 +202,22 @@ func (h *Hamba) GetAsUint64(key string, base int) (uint64, error) {
 }
 
 // Add adds values to hamba list
-func (h *Hamba) Add(key, value string, readonly bool) {
+func (h *Hamba) Add(key string, value interface{}, readonly bool) {
 	h.key = append(h.key, key)
-	h.value = append(h.value, value)
+	h.value = append(h.value, fmt.Sprintf("%v", value))
 	h.readonly = append(h.readonly, readonly)
+}
+
+// AddRange adds the element of keys, values, readonlies in the same position
+func (h *Hamba) AddRange(keys []string, values []interface{}, readonlies []bool) error {
+	if len(keys) == len(values) && len(values) == len(readonlies) {
+		for i := 0; i < len(keys); i++ {
+			key, value, readonly := keys[i], values[i], readonlies[i]
+			h.Add(key, value, readonly)
+		}
+		return nil
+	}
+	return errAreNotHaveSameLength
 }
 
 // UpdateKey updates key to the newKey
@@ -280,4 +295,15 @@ func (h *Hamba) Delete(key string) error {
 // Remove function is the same with Delete function
 func (h *Hamba) Remove(key string) error {
 	return h.Delete(key)
+}
+
+// ShowLikeMap shows hamba dict like a map
+func (h Hamba) ShowLikeMap() {
+	// fmt.Println(map[string]string{"a": "b", "d": "e e"})
+	result := []string{}
+	for i := 0; i < len(h.key); i++ {
+		key, value := h.key[i], h.value[i]
+		result = append(result, key+":"+value)
+	}
+	fmt.Println("map[" + strings.Join(result, " ") + "]")
 }
